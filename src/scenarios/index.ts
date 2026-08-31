@@ -2,6 +2,7 @@ import {
   Scenario,
   ClientScenario,
   ClientScenarioForAuthorizationServer,
+  ScenarioForResourceAuthorizationServer,
   ScenarioSource,
   SpecVersion,
   DatedSpecVersion,
@@ -112,6 +113,20 @@ import {
 import { listMetadataScenarios } from './client/auth/discovery-metadata';
 import { AuthorizationServerMetadataEndpointScenario } from './authorization-server/authorization-server-metadata';
 import { AuthorizationCodeGrantScenario } from './authorization-server/authorization-code-grant';
+
+// EMA Resource Authorization Server scenarios (ISSUE-470)
+import { ResourceServerMetadataScenario } from './ema/resource-authorization-server/resource-authorization-metadata';
+import {
+  ResourceServerHappyPathScenario,
+  ResourceServerHappyPathWithResourceScenario,
+  ResourceServerHappyPathWithScopeScenario
+} from './ema/resource-authorization-server/resource-authorization-happy-path';
+import {
+  ResourceServerErrorPathScenario,
+  ResourceServerInvalidScopeScenario,
+  ResourceServerInvalidSignatureScenario,
+  ResourceServerUntrustedIdpScenario
+} from './ema/resource-authorization-server/resource-authorization-error-path';
 
 import { HttpStandardHeadersScenario } from './client/http-standard-headers';
 import {
@@ -293,6 +308,30 @@ export const clientScenariosForAuthorizationServer = new Map<
   ])
 );
 
+// All scenarios for the EMA Resource Authorization Server (ISSUE-470)
+const allScenariosListForResourceAuthorizationServer: ScenarioForResourceAuthorizationServer[] =
+  [
+    new ResourceServerMetadataScenario(),
+    new ResourceServerHappyPathScenario(),
+    new ResourceServerHappyPathWithResourceScenario(),
+    new ResourceServerHappyPathWithScopeScenario(),
+    new ResourceServerErrorPathScenario(),
+    new ResourceServerInvalidScopeScenario(),
+    new ResourceServerInvalidSignatureScenario(),
+    new ResourceServerUntrustedIdpScenario()
+  ];
+
+// Scenarios map for the EMA Resource Authorization Server - built from list
+export const resourceAuthorizationServerScenarios = new Map<
+  string,
+  ScenarioForResourceAuthorizationServer
+>(
+  allScenariosListForResourceAuthorizationServer.map((scenario) => [
+    scenario.name,
+    scenario
+  ])
+);
+
 // All client test scenarios (core + backcompat + extensions)
 const scenariosList: Scenario[] = [
   new InitializeScenario(),
@@ -386,6 +425,16 @@ export function listBackcompatScenarios(): string[] {
 
 export function listClientScenariosForAuthorizationServer(): string[] {
   return Array.from(clientScenariosForAuthorizationServer.keys());
+}
+
+export function getScenarioForResourceAuthorizationServer(
+  name: string
+): ScenarioForResourceAuthorizationServer | undefined {
+  return resourceAuthorizationServerScenarios.get(name);
+}
+
+export function listScenariosForResourceAuthorizationServer(): string[] {
+  return Array.from(resourceAuthorizationServerScenarios.keys());
 }
 
 // All client-testing scenarios that target the draft spec, derived from the
@@ -484,7 +533,8 @@ export function getScenarioSpecVersions(
   const s =
     scenarios.get(name) ??
     clientScenarios.get(name) ??
-    clientScenariosForAuthorizationServer.get(name);
+    clientScenariosForAuthorizationServer.get(name) ??
+    resourceAuthorizationServerScenarios.get(name);
   if (!s) return undefined;
   if ('extensionId' in s.source) return ['extension'];
   const result: ScenarioSpecTag[] = [];
